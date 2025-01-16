@@ -1,0 +1,14 @@
+TP6 
+
+2-
+a) data Racing
+
+b) +threads -> +data Racing
+
+c) pragma omp critical
+
+d)
+#pragma omp parallel for reduction(+:dot)
+for (int i = 0; i < size; i++) {
+    dot += a[i] * b[i];
+}

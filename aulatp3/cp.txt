@@ -1,0 +1,119 @@
+https://godbolt.org/
+
+Vector processing é uma técnica de computação que permite realizar operações em múltiplos dados simultaneamente usando um único comando. Ao invés de processar um único dado por vez (como na maioria dos processadores tradicionais), o processador executa a mesma operação em um conjunto de dados (ou vetor).
+
+Como funciona:
+Em vez de processar uma operação para cada elemento de um vetor de forma sequencial (elemento a elemento), o processador executa uma instrução que pode operar em vários elementos ao mesmo tempo. Por exemplo, se quisermos somar dois vetores 
+A e 𝐵 de tamanho 4, um processador tradicional faria quatro operações de soma (uma para cada par de elementos). Com o vector processing, o processador pode realizar todas as somas simultaneamente.
+
+
+1-
+a) salto de 8 para salto de 64, foi desdobrado para um salto de 8 valores de cada vez
+
+b)  
+A versão com unrolling (unroll) deve apresentar melhor desempenho em relação à versão base.
+
+Redução da Sobrecarga de Controle de Loop: Ao usar loop unrolling, o número de vezes que o loop precisa ser controlado (i.e., incrementar o contador, verificar a condição de término) é reduzido. Em vez de fazer uma operação de controle por iteração, o processador executa várias operações antes de verificar a condição de término novamente. Isso diminui a sobrecarga associada ao controle do loop.
+
+Melhor Utilização do Pipeline: Os processadores modernos possuem pipelines que permitem a execução de várias instruções simultaneamente. No entanto, interrupções frequentes causadas pelo controle de loop podem atrapalhar o fluxo contínuo de instruções no pipeline. O loop unrolling aumenta a quantidade de trabalho entre as verificações de controle, permitindo que o pipeline seja mais bem utilizado, o que resulta em menos "stalls" (paradas) e maior eficiência.
+
+Resultado esperado:
+A versão unroll provavelmente terá valores menores de CPI (ciclos por instrução), ou seja, mais instruções executadas por ciclo, e semelhantes L1 cache misses, comparado à versão base. Unroll + instruções. 
+
+2-
+a) 
+não esta a usar a transposta
+dependecia da multiplicação entre A e B antes da soma na matriz C
+
+Duas razões pelas quais o código base não pode ser vetorizado:
+Padrões de acesso não sequenciais à memória:
+
+A multiplicação de matrizes envolve três loops aninhados que acessam elementos das matrizes de forma diferente. A matriz 
+A[i][k] é acessada sequencialmente em cada linha (bom para vetorizar), mas a matriz B[k][j] é acessada por colunas (não sequencialmente na memória, em geral). Isso resulta em acessos dispersos na memória (não lineares) para a matriz B, o que dificulta a vetorização, pois a eficiência da vetorização depende de acessos contíguos a dados.
+
+Dependência de dados:
+No código base, há uma acumulação de resultados na matriz C[i][j], ou seja, o valor de  C[i][j] é atualizado a cada iteração do loop interno. Esse tipo de dependência de dados (onde o valor de C[i][j] depende dos valores anteriores computados nas iterações anteriores) impede que múltiplas iterações sejam executadas simultaneamente de forma vetorizada, porque o compilador não pode reorganizar a ordem de cálculo de forma segura sem quebrar a lógica do algoritmo.
+Para vetorizar eficientemente, o compilador precisa de operações independentes entre iterações, algo que não acontece aqui devido a essa dependência de dados.
+
+b) sem transposta, alterar ordem dos loops (i,k,j)
+Por que essa ordem permite vetorização?
+Acesso contíguo à matriz B:
+No código original (ordem "ijk"), a matriz B é acessada por colunas (B[k][j]), o que não resulta em acessos contíguos na memória, dificultando a vetorização.
+Ao mudar para a ordem "ikj", o loop mais interno passa a iterar sobre j, que percorre as colunas de C e de B[k][j], garantindo um acesso contíguo à memória para B.
+
+Acesso eficiente à matriz C:
+Na nova ordem, cada elemento de C[i][j] é atualizado de maneira sequencial em colunas, o que pode ser vetorizado facilmente, já que os valores de C[i][j] podem ser acumulados em vetores de 128 ou 256 bits, dependendo do conjunto de instruções vetoriais (como SSE ou AVX).
+
+Acesso contíguo à matriz A:
+A matriz A[i][k] continua sendo acessada por linhas, o que já é contíguo na memória na maioria das implementações de matrizes, o que é favorável para a vetorização.
+
+3-
+a)
+é solicitado o cálculo da performace de pico em uma arquitetura com instruções vetoriais de 256 bits, usando vetores de 128 bits (double precision) e com uma máquina funcionando a 2,5 GHz.
+
+Passos para determinar a performance de pico:
+Definir a performance de pico em operações de ponto flutuante (FLOP/s):
+A máquina tem um desempenho de pico de 256 bits por ciclo, o que significa que a cada ciclo de clock, ela pode realizar operações com dois valores de ponto flutuante de 64 bits simultaneamente (vetores de double precision).
+Cálculo do número de FLOP/s:
+Sabemos que cada ciclo da máquina permite realizar 2 operações de ponto flutuante de precisão dupla (64 bits).
+O clock da máquina é de 2,5 GHz, o que significa que a máquina executa 2,5 bilhões de ciclos por segundo.
+Para calcular o FLOP/s (operações de ponto flutuante por segundo), multiplicamos o número de operações por ciclo pelo número de ciclos por segundo:
+FLOP/s=2FLOP/ciclo×2.5×10^9ciclos/segundo
+FLOP/s=5×10^9FLOP/s
+Assim, a performance de pico da máquina é 5 GFLOP/s (5 bilhões de operações de ponto flutuante por segundo).
+
+Tempo necessário para a multiplicação de matrizes 1024x1024:
+Para calcular o tempo necessário para realizar uma multiplicação de matrizes de 1024x1024, precisamos calcular quantas operações de ponto flutuante são necessárias.
+A multiplicação de duas matrizes A (N x N) e B (N x N) resulta em uma matriz C (N x N). Cada elemento de C é obtido por N multiplicações e N-1 somas. Portanto, para uma matriz de ordem N (no caso, 1024), o número total de operações de ponto flutuante necessárias é aproximadamente:
+2*N^3 (N = 1024)
+operacoes totais = =2×1,073,741,824=2,147,483,648 FLOP
+
+Calcular o tempo necessário: Sabemos que a performance de pico é 5 GFLOP/s (ou 5 \times 10^9 FLOP/s), então o tempo necessário para realizar as operações de multiplicação de matrizes pode ser calculado dividindo o número total de FLOP pelo pico de FLOP/s:
+
+Tempo = 2,147,483,648 FLOP / 5*10^9 FLOPS por s
+=0.429 segundos
+
+
+b)
+O modelo roofline é uma ferramenta gráfica que ajuda a visualizar como a intensidade aritmética e a largura de banda de memória afetam a performance de um algoritmo. O gráfico tem dois eixos:
+
+Eixo X: Intensidade aritmética (Operações de ponto flutuante por byte de memória transferido).
+Eixo Y: Performance de pico (medida em GFLOP/s).
+No gráfico, a performance de pico é representada por uma linha horizontal (o "teto" ou "roof"), que indica a máxima capacidade de cálculo da máquina. Essa linha mostra o máximo de operações de ponto flutuante por segundo que a máquina pode executar, limitando-se pelo poder de processamento da CPU, independentemente de quantos bytes de dados a aplicação transferiu da memória.
+
+
+c)
+A intensidade aritmética (em FLOP/byte) é a relação entre o número total de operações de ponto flutuante realizadas e a quantidade total de dados movidos entre a memória e o processador (em bytes). A fórmula é:
+itensidade aritmetica = operacoes por ponto flutuante (FLOP) / dados transferidos (bytes)
+
+A intensidade aritmética mínima é 0.25 FLOP/byte, o que significa que, para que a máquina não seja limitada pela largura de banda, deve haver, no mínimo, 0.25 operações de ponto flutuante para cada byte de dados transferido entre a memória e o processador.
+Conclusão:
+A intensidade aritmética mínima que a máquina deve suportar sem ser limitada pela largura de banda de memória é 0.25 FLOP/byte. Se a intensidade aritmética do algoritmo for menor do que esse valor, a máquina será restrita pela largura de banda de memória, e não pela capacidade de processamento da CPU.
+
+
+d)
+A largura de banda de memória é a quantidade máxima de dados que podem ser transferidos entre o processador e a memória por segundo. Se o algoritmo requer mais bytes de memória por operação de ponto flutuante do que a largura de banda disponível, o desempenho será limitado pela largura de banda de memória e não pela capacidade de cálculo da CPU.
+
+Em termos do modelo roofline, isso significa que, se o algoritmo for mais "pesado" em acessos à memória do que em operações de ponto flutuante, a performance será restrita pela quantidade de dados que podem ser movidos para dentro e para fora da memória, não pelo poder de processamento do CPU.
+
+
+e)
+Com uma intensidade aritmética de 0.083 FLOP/byte, a implementação ikj estará muito abaixo da linha de teto de memória (limitada pela largura de banda). Isso significa que a performance será limitada pela memória e não pela capacidade de cálculo da CPU, o que impede de atingir o máximo de 5 GFLOP/s.
+
+
+f)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

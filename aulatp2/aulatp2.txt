@@ -1,0 +1,84 @@
+1/10/24
+
+A hierarquia de memória é um sistema organizado que permite que os computadores armazenem e acessem dados de maneira eficiente. Ela é composta por diferentes níveis de memória, como registradores, cache, RAM e armazenamento em disco. Cada nível tem características diferentes em termos de velocidade e capacidade.
+
+Localidade Temporal: Refere-se ao princípio de que, se um dado foi acessado recentemente, é provável que ele seja acessado novamente em um futuro próximo. Isso significa que armazenar dados que foram usados recentemente em níveis mais rápidos da memória (como cache) pode melhorar significativamente o desempenho.
+
+Localidade Espacial: Refere-se à tendência de que, quando um dado é acessado, é provável que dados próximos a ele também sejam acessados em breve. Isso implica que, ao carregar um bloco de dados, é vantajoso trazer também dados adjacentes, já que eles podem ser necessários em seguida.
+
+
+
+Exercício 1: 
+a)
+C[i][j]: Neste caso, o elemento da matriz C é acessado sequencialmente, em cada iteração do laço sobre as colunas de B. Este acesso exibe localidade espacial.
+
+A[i][k]: O acesso aos elementos da matriz A é feito por linha, mas, dentro de cada iteração de k, acessamos diferentes colunas na mesma linha. Portanto, este acesso também exibe localidade espacial, pois os elementos consecutivos na mesma linha de A tendem a estar próximos na memória.
+
+B[k][j]: O acesso à matriz B é feito por colunas, ou seja, o algoritmo acessa diferentes linhas da mesma coluna em iterações consecutivas de k. Este acesso não exibe localidade espacial, pois há saltos na memória a cada linha acessada, diminuindo a eficiência de cache.
+
+
+b)
+B = N^3 ---> 3 loops 
+A = N^3 / 8 ---> 8 bytes por bloco, variável conforme o bloco
+
+maior o bloco, melhor pra A, pior pra B (carrega mais informação inútil)
+
+c)
+A = N^3 / 8
+B = N^3 / 8
+
+d)
+CPI = Ciclos / Instruções
+
+e)
+Como existem três laços aninhados (i, j e k), existem 6 variações possíveis
+A ordem dos laços que minimiza o número de falhas de cache depende da localidade espacial e da capacidade de reutilizar dados no cache. A melhor ordem é aquela que acessa os elementos da memória de forma sequencial, maximizando a localidade espacial.
+
+f)
+Na implementação com a transposição, o objetivo é melhorar a localidade espacial, especialmente para a matriz B, que é acessada por colunas. Ao transpor B, os acessos passam a ser feitos por linhas o que melhora significamente a localidade espacial e reduz o numero de falhas de cache.
+
+Representação com array de ponteiros:
+Quando usamos um array de ponteiros (array de arrays), cada linha da matriz é representada por um ponteiro, o que pode ter um impacto negativo na localidade de dados. Isso acontece porque os ponteiros podem apontar para blocos de memória não contíguos, resultando em acessos menos eficientes ao cache.
+Com essa representação, a localidade espacial pode ser prejudicada, especialmente se os dados estiverem distribuídos de forma dispersa na memória. Isso aumenta as falhas de cache e o tempo de execução.
+
+
+
+Exercicio 2:
+a)
+Uma estratégia eficaz é computar mais de um elemento de C de uma só vez, realizando várias operações de soma dentro do mesmo laço sobre k.
+
+for (i = 0; i < N; i += 4) {     // Processar 4 linhas de C ao mesmo tempo
+  for (j = 0; j < N; j++) {
+    for (k = 0; k < N; k++) {
+      C[i][j]     += A[i][k] * B[k][j];
+      C[i+1][j]   += A[i+1][k] * B[k][j];
+      C[i+2][j]   += A[i+2][k] * B[k][j];
+      C[i+3][j]   += A[i+3][k] * B[k][j];
+    }
+  }
+}
+
+Com essa modificação, o elemento B[k][j] é carregado uma vez no cache e utilizado para calcular 4 produtos escalares consecutivos, reduzindo o número de recargas da memória. Isso melhora significativamente a localidade temporal, já que o mesmo valor de B[k][j] é reutilizado várias vezes enquanto ainda está no cache, diminuindo as falhas de cache.
+
+Estimativa: N^3 / 4
+
+
+b)
+#define T 32  // Tamanho do bloco (pode variar)
+
+void matmul_tiled(int N, double A[N][N], double B[N][N], double C[N][N]) {
+    for (int ii = 0; ii < N; ii += T) {
+        for (int jj = 0; jj < N; jj += T) {
+            for (int kk = 0; kk < N; kk += T) {
+                // Multiplicação dentro de blocos
+                for (int i = ii; i < ii + T; i++) {
+                    for (int j = jj; j < jj + T; j++) {
+                        for (int k = kk; k < kk + T; k++) {
+                            C[i][j] += A[i][k] * B[k][j];
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

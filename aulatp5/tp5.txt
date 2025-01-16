@@ -1,0 +1,74 @@
+1.
+a)
+No, the order of the output is not always the same across multiple runs.
+Explanation:
+OpenMP parallel regions involve concurrent execution of multiple threads. Each thread operates independently, and their execution is interleaved non-deterministically.
+The order in which the threads print their outputs depends on how the operating system schedules the threads, and thread scheduling can vary from run to run.
+Since the threads are printing in parallel, outputs from different threads can interleave unpredictably. For example, in one run, the output might start with T0:i0, and in another run, it could start with T1:i0 because thread scheduling is non-deterministic.
+
+b)
+Yes, the output of each individual thread is always the same.
+Explanation:
+Each thread executes its loop from i = 0 to i = 99 in sequential order within the parallel region. This is because the loop iteration is performed inside each thread independently, and the value of i increases deterministically within each thread.
+
+c)
+In this code, each thread executes the entire loop independently.
+
+Explanation:
+The two threads are both executing the full loop independently, so there is no distribution of loop iterations across threads. Each thread runs the loop from 0 to 99.
+
+
+--------//----------
+#pragma omp for
+Finalidade: A diretiva #pragma omp for é usada para distribuir as iterações de um laço (for)
+
+#pragma omp master
+Finalidade: A diretiva #pragma omp master faz com que o bloco de código dentro dela seja executado apenas pelo thread mestre (thread 0). 
+
+#pragma omp single
+Finalidade: A diretiva #pragma omp single faz com que o bloco de código dentro dela seja executado apenas por um thread, mas não necessariamente pelo thread mestre. 
+
+#pragma omp critical
+Finalidade: A diretiva #pragma omp critical é usada para definir uma seção crítica em que apenas um thread por vez pode executar o bloco de código dentro dela. Isso é necessário quando você tem código que acessa recursos compartilhados.
+
+#pragma omp barrier
+The directive #pragma omp barrier is used in OpenMP to synchronize all threads in a parallel region. It ensures that all threads must reach the barrier before any of them can continue execution beyond that point.
+-------//------------
+-> schedule(static) and schedule(static, 10)
+
+The schedule(static) clause in OpenMP specifies how loop iterations are divided among threads when parallelizing a for loop. In static scheduling, loop iterations are assigned to threads before the execution starts, and the distribution is fixed.
+
+schedule(static): By default, the iterations are divided equally (or almost equally) among the threads. Each thread gets a contiguous block of iterations.
+
+Example: For 4 threads and 100 iterations, each thread will receive 25 iterations:
+Thread 0: iterations 0 to 24
+Thread 1: iterations 25 to 49
+Thread 2: iterations 50 to 74
+Thread 3: iterations 75 to 99
+schedule(static, 10): Here, iterations are divided into chunks of size 10 and are assigned to threads in a round-robin fashion. Each thread gets multiple chunks, but each chunk has 10 iterations.
+
+Example: For 4 threads and 100 iterations, each thread will get 10 iterations at a time:
+Thread 0: iterations 0-9, 40-49, 80-89
+Thread 1: iterations 10-19, 50-59, 90-99
+Thread 2: iterations 20-29, 60-69
+Thread 3: iterations 30-39, 70-79
+
+
+-> schedule(dynamic) and schedule(dynamic, 10)
+In dynamic scheduling, loop iterations are assigned to threads at runtime, and the distribution can vary based on how quickly threads complete their tasks. This is useful when the work per iteration is unbalanced or unpredictable.
+
+schedule(dynamic): By default, threads request one chunk of iterations at a time as they finish their work. The chunk size is typically 1 iteration.
+
+Example: For 4 threads and 100 iterations, thread 0 may start with iteration 0, but as soon as it finishes, it grabs the next available iteration (which could be 1 if no other thread has taken it). The iterations are assigned dynamically as threads become idle.
+schedule(dynamic, 10): Here, threads are assigned chunks of 10 iterations at a time. Once a thread finishes its current chunk of 10 iterations, it grabs the next available chunk.
+
+Example: For 4 threads and 100 iterations, thread 0 may start with iterations 0-9. If it finishes quickly, it grabs the next available chunk, which might be 40-49 if other threads are already working on the other chunks.
+This method ensures that threads do not remain idle if other threads are still working on large or complex iterations.
+
+
+-> schedule(guided)
+In guided scheduling, the size of the chunks decreases dynamically as the program progresses. Initially, larger chunks of iterations are assigned to each thread, but as the threads finish and request more work, the size of the new chunks decreases. This is useful when some iterations take longer than others, and the overall workload decreases over time.
+
+
+usa-se no for: #pragma omp for schedule(…)
+

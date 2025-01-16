@@ -1,0 +1,28 @@
+1-
+a)
+Escalabilidade Forte com critical, atomic e reduction
+
+Tempo de Execução:
+O tempo de execução sequencial será mais longo, pois todo o cálculo de π é feito em um único núcleo.
+Ao executar o programa em paralelo com 2 e 4 PUs, espera-se que o tempo de execução diminua. Contudo, a redução no tempo não será linear devido à sobrecarga de sincronização associada a cada diretiva.
+
+Comparação de Diretivas:
+A diretiva reduction deve proporcionar o menor overhead entre as três, porque é projetada especificamente para somas em paralelo, evitando a necessidade de seções críticas ou operações atômicas em cada atualização.
+A diretiva atomic tem um overhead intermediário, pois garante segurança de acesso a mypi, mas é mais eficiente que critical.
+A diretiva critical introduz o maior overhead, porque impede que múltiplas threads entrem na seção crítica ao mesmo tempo, criando um gargalo quando várias threads tentam atualizar a variável mypi.
+
+Escalabilidade:
+Com 2 PUs: O tempo de execução deve ser aproximadamente metade do tempo sequencial, embora um pouco maior devido ao overhead de sincronização.
+Com 4 PUs: O tempo de execução deve diminuir ainda mais, mas o ganho adicional será menor, especialmente ao usar critical, devido ao aumento da competição entre as threads.
+
+b)
+Análise de Overhead da Diretiva critical com perf
+
+Relatório de perf:
+O perf report deve mostrar um hotspot significativo na seção marcada com critical. Isso significa que uma grande parte do tempo de execução é gasta esperando que outras threads saiam da seção crítica.
+O relatório também pode indicar a frequência com que as threads são bloqueadas, destacando a ineficiência da sincronização com critical quando comparada às outras opções.
+
+Interpretação:
+Espera-se que o overhead da diretiva critical seja evidente, especialmente com 4 PUs, porque a contenção aumenta. Isso justifica a escolha de reduction como a melhor opção para a soma paralela, devido ao menor custo de sincronização.
+
+

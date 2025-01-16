@@ -1,0 +1,29 @@
+https://godbolt.org/
+
+Exercício 1:
+
+a)
+Função N^3
+
+(2N)^3 = 8(N^3) -> aumenta 8 vezes
+
+A componente de performance afetada é o nr de instruções.
+
+b)
+-O2
+código assembly ->  8 instruções hotspot
+8 * 512^3 = 1 073 741 824
+
+-O
+código assembly -> 45 instrições hotspot
+45 * 512^3 = 6 039 797 760
+
+
+Exercício 2:
+b)
+No nível de otimização -O0, o compilador gera um código mais simples e direto, sem aplicar técnicas avançadas de otimização. Isso significa que o código resultante tende a ser menos complexo e pode, em algumas circunstâncias, utilizar menos ciclos por instrução.
+
+e) 
+Total de Ciclos: 5 ciclos (para 5 instruções)
+Total de Instruções: 5
+CP1 = 5/5 = 1
